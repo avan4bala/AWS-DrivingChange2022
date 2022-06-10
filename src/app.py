@@ -1,99 +1,67 @@
-from PyPDF2 import PdfFileWriter, PdfFileReader
+import os
 
-import json
+from pdf2image import convert_from_bytes
+
 import boto3
+import re
 import uuid
 import datetime
+from urllib.parse import unquote
+
 
 s3_client = boto3.client("s3")
-dynamodb_client = boto3.client("dynamodb", region_name="us-west-2")
+dynamodb_client = boto3.client("dynamodb")
+upload_bucket = "drivingchange-sample-documents"
+processed_bucket = "drivingchange-processed-documents"
 
 
-class Params:
-    def __init__(self, event):
-        self.event = event
-
-    @property
-    def upload_object(self) -> dict:
-        key = self.event["Records"][0]["s3"]["object"]["key"]
-        return {"key": key, "file_name": key.split('/')[-1]}
-
-    @property
-    def buckets(self) -> dict:
-        return {
-            "source": self.event["Records"][0]["s3"]["bucket"]["name"],
-            "destination": "drivingchange-processed-documents"
-        }
-
-
-def process_pdf(file_name, file_id):
-    pass
-
-
-def dispatch(event):
-    params = Params(event)
-    file_path = f"/tmp/{params.upload_object['file_name']}"
-    document_id = str(uuid.uuid4())
-
-    # get file from s3 bucket
-    with open(file_path, "wb") as file:
-        s3_client.download_fileobj(params.buckets["source"], params.upload_object["key"], file)
-
-    file_extension = (params.upload_object["file_name"]).split(".")[-1].lower()
-    if file_extension == "pdf":
-        process_pdf(file_path, document_id)
+def process_pdf(document, file_name):
+    """Convert PDF to images"""
+    pages = convert_from_bytes(document, poppler_path="/var/task/poppler/bin/")
+    for index, page in enumerate(pages):
+        page.save(f"{file_name}-{index + 1}.png", "PNG")
 
 
 def lambda_handler(event, context):
     key = event["Records"][0]["s3"]["object"]["key"]
-    bucket = event["Records"][0]["s3"]["bucket"]["name"]
-    processed_bucket = "drivingchange-processed-documents"
+    key = unquote(key.replace("+", " "))  # url decode
+    document_id = str(uuid.uuid4())
+    print(f'Proccessing Started:', key)
 
-    # get file from s3 bucket
-    file_path = f'/tmp/{key.split("/")[-1]}'
-    with open(file_path, "wb") as file:
-        s3_client.download_fileobj(bucket, key, file)
+    # get file from uploaded s3 bucket
+    document = s3_client.get_object(Key=key, Bucket=upload_bucket)["Body"].read()
+    print(f'Downloaded PDF from S3 upload bucket')
 
-    # split file into multiple pages
-    pdf_file = PdfFileReader(open(file_path, "rb"))
-    for i in range(pdf_file.numPages):
-        data = PdfFileWriter()
-        data.add_page(pdf_file.getPage(i))
-        with open(f'{file_path}-{i}', "wb") as output_file:
-            data.write(output_file)
+    # convert to png images
+    file_name = f"/tmp/{re.match(r'^(?:.*/)?(.*).(?:pdf|PDF)$', key).group(1)}"
+    process_pdf(document, file_name)
+    print("PDF has been converted to images")
 
-    # add file into processed s3 bucket
-    pdf_id = str(uuid.uuid4())
-    for i in range(pdf_file.numPages):
-        with open(f'{file_path}-{i}', "rb") as file:
-            s3_client.put_object(
-                Body=file,
-                Key=f'{pdf_id}/images/{key.split("/")[-1]}-{i}',
-                Bucket=processed_bucket,
-            )
+    # upload images to secondary s3
+    images = [i for i in os.listdir("/tmp/") if i.endswith(".png")]
+    for image in images:
+        with open(f'/tmp/{image}', "rb") as image_file:
+            s3_client.upload_fileobj(image_file, processed_bucket, f'{document_id}/images/{image}')
+    print("Images has been uploaded to the secondary S3 bucket")
 
-    # add file to dynamodb
+    # add docoument to dynamodb
     dynamodb_client.put_item(
         TableName="documents-dev-poc",
         Item={
             "document_id": {
-                "S": pdf_id
+                "S": document_id
             },
             "create_date": {
                 "S": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
             },
             "Filename": {
-                "S": key.split("/")[-1]
+                "S": key
             },
             "PageCount": {
-                "N": str(pdf_file.numPages)
+                "N": str(len(images))
             }
         }
     )
+    print("Added to dynamodb:", document_id)
 
-    return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "message": "hello world, nothing is something or is it?",
-        })
-    }
+    return {"statusCode": 200}

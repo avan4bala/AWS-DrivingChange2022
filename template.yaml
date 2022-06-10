@@ -13,4 +13,8 @@ Resources:
       Runtime: python3.9
       Architectures:
         - x86_64
+      MemorySize: 10240
+      Environment:
+        Variables:
+          LD_LIBRARY_PATH: /lib64:/usr/lib64:$LAMBDA_RUNTIME_DIR:$LAMxBDA_RUNTIME_DIR/lib:$LAMBDA_TASK_ROOT:$LAMBDA_TASK_ROOT/lib:/var/task/poppler/lib/
 

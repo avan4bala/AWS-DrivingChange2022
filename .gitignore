@@ -4,7 +4,7 @@
 ### Linux ###
 *~
 
-# temporary files which can be created if a process still has a handle open of a deleted file
+# temporary documents which can be created if a process still has a handle open of a deleted file
 .fuse_hidden*
 
 # KDE directory preferences
@@ -13,7 +13,7 @@
 # Linux trash folder which might appear on any partition or disk
 .Trash-*
 
-# .nfs files are created when an open file is removed but is still being accessed
+# .nfs documents are created when an open file is removed but is still being accessed
 .nfs*
 
 ### OSX ###
@@ -52,7 +52,7 @@ Temporary Items
 .idea/**/tasks.xml
 .idea/dictionaries
 
-# Sensitive or high-churn files:
+# Sensitive or high-churn documents:
 .idea/**/dataSources/
 .idea/**/dataSources.ids
 .idea/**/dataSources.xml
@@ -109,7 +109,7 @@ fabric.properties
 .idea/sonarlint
 
 ### Python ###
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL documents
 __pycache__/
 *.py[cod]
 *$py.class
@@ -136,7 +136,7 @@ wheels/
 *.egg
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
+#  Usually these documents are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
@@ -183,7 +183,7 @@ target/
 # celery beat schedule file
 celerybeat-schedule.*
 
-# SageMath parsed files
+# SageMath parsed documents
 *.sage.py
 
 # Environments
@@ -217,7 +217,7 @@ venv.bak/
 .history
 
 ### Windows ###
-# Windows thumbnail cache files
+# Windows thumbnail cache documents
 Thumbs.db
 ehthumbs.db
 ehthumbs_vista.db
@@ -228,7 +228,7 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-# Windows Installer files
+# Windows Installer documents
 *.cab
 *.msi
 *.msm
