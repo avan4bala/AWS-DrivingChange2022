@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ''
+Globals:
+  Function:
+    Timeout: 900
+Resources:
+  ProcessNewS3Uploads:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      MemorySize: 10240
+      Environment:
+        Variables:
+          LD_LIBRARY_PATH: /lib64:/usr/lib64:$LAMBDA_RUNTIME_DIR:$LAMxBDA_RUNTIME_DIR/lib:$LAMBDA_TASK_ROOT:$LAMBDA_TASK_ROOT/lib:/var/task/poppler/lib/
+
